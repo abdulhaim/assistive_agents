@@ -11,7 +11,7 @@ def train_phaseI(args, agent, env, replay_buffer):
         next_obs, reward, done, info = env.step(action)
 
         discount = args.discount**ep_len
-        reward = reward[0]
+        reward = reward[0] # just getting single assistive agent reward
         next_obs = np.array(next_obs['image'])
         next_obs_shape = torch.tensor(next_obs).shape
         next_obs = torch.reshape(torch.tensor(next_obs), (next_obs_shape[0], next_obs_shape[3], next_obs_shape[1], next_obs_shape[2])).double()
@@ -26,9 +26,8 @@ def train_phaseI(args, agent, env, replay_buffer):
         if done or ep_len == env.max_episode_steps:
             agent.log[args.log_name].info("Train Returns: {:.3f} at iteration {}".format(ep_reward, step))
             agent.tb_writer.log_data("episodic_reward", step, ep_reward)
-            obs, ep_reward, ep_len = np.array(env.reset()['image']), 0, 0
-            obs_shape = torch.tensor(obs).shape
-            obs = torch.reshape(torch.tensor(obs), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2])).double()
+            obs, ep_reward, ep_len = env.reset(), 0, 0
+            obs = format_obs(obs, task_num, len(args.tasks))
             total_episode_count +=1
 
         # Update handling
@@ -46,8 +45,7 @@ def train_phaseII(args, agent, human_agent, env, replay_buffer):
     total_episode_count = 0
     obs, ep_reward, ep_len, task_num = np.array(env.reset()['image']), 0, 0, 0
     for step in range(args.total_steps):
-        # TODO: Determine Task ID
-        task_id = agent.get_task(obs)
+        task_id = agent.predict_task(obs)
         action = agent.get_action(obs, task_id)
         next_obs, reward, done, info = env.step(action)
         next_obs = np.array(next_obs['image'])

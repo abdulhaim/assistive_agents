@@ -2,12 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c55df7cb-ef61-4afd-bfa7-a532acd3e02f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/algorithms/agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/algorithms/agents.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/algorithms/replay_buffer.py" beforeDir="false" afterPath="$PROJECT_DIR$/algorithms/replay_buffer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/berrygrid/.idea/workspace.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/berrygrid/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/berrygrid/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/berrygrid/envs/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/berrygrid/envs/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/berrygrid/envs/pick.py" beforeDir="false" afterPath="$PROJECT_DIR$/berrygrid/envs/pick.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/berrygrid/multigrid.py" beforeDir="false" afterPath="$PROJECT_DIR$/berrygrid/multigrid.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/misc/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/misc/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainer.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,7 +89,7 @@
       <workItem from="1633618886426" duration="10490000" />
       <workItem from="1633822398139" duration="134000" />
       <workItem from="1633822544790" duration="427000" />
-      <workItem from="1633823539964" duration="39157000" />
+      <workItem from="1633823539964" duration="40111000" />
     </task>
     <servers />
   </component>

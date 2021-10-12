@@ -67,10 +67,7 @@ def format_obs(obs, task, num_tasks):
     obs = np.array(obs['image'])
     obs_shape = torch.tensor(obs).shape
     obs = torch.reshape(torch.tensor(obs), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2])).double()
-    one_hot = to_onehot(torch.tensor([task]), num_tasks)
-    print(one_hot.shape)
-    print(torch.stack([obs, one_hot]))
-    assert 1 == 2
+    one_hot = to_onehot(torch.tensor([task]), num_tasks) # TODO: add task ID in observation?
     return obs
 
 def to_onehot(value, dim):

@@ -13,7 +13,6 @@ class ReplayBufferPhaseI(object):
         self.assistant_reward_buf = np.zeros(size, dtype=np.float32)
         self.next_obs_buf = np.zeros((size, obs_dim[2], obs_dim[0], obs_dim[1]), dtype=np.float32)
         self.assistant_next_action_buf = np.zeros(combined_shape(size, act_dim), dtype=np.float32)
-        self.discount_buf = np.zeros(size, dtype=np.float32)
         self.done_buf = np.zeros(size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, size
 
@@ -23,7 +22,6 @@ class ReplayBufferPhaseI(object):
         self.assistant_reward_buf[self.ptr] = reward
         self.next_obs_buf[self.ptr] = next_obs
         self.assistant_next_action_buf[self.ptr] = next_action
-        self.discount_buf[self.ptr] = discount
         self.done_buf[self.ptr] = done
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
@@ -36,7 +34,6 @@ class ReplayBufferPhaseI(object):
             assistant_reward=self.assistant_reward_buf[idxs],
             next_obs=self.next_obs_buf[idxs],
             assistant_next_action=self.assistant_next_action_buf[idxs],
-            discount=self.discount_buf[idxs],
             done=self.done_buf[idxs])
         return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in batch.items()}
 
