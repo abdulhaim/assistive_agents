@@ -1,0 +1,12 @@
+# BerryGrid Environment
+
+lr: 0.001
+tasks: ["red", "green", "blue", "purple", "grey"]
+num_cumulants: 10
+num_demonstrators: 1
+human_phase: False
+total_steps: 1000000
+max_episode_steps: 200
+converge: 10000
+discount: 0.99
+

@@ -1,0 +1,9 @@
+torch
+matplotlib
+pandas
+seaborn
+tqdm
+tensorboardX==1.2
+pyyaml
+numpy
+gym
