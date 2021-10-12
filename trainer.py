@@ -43,7 +43,9 @@ def train_phaseI(args, agent, env, replay_buffer):
 
 def train_phaseII(args, agent, human_agent, env, replay_buffer):
     total_episode_count = 0
-    obs, ep_reward, ep_len, task_num = np.array(env.reset()['image']), 0, 0, 0
+    obs, ep_reward, ep_len, task_num = env.reset(), 0, 0, 0
+    obs = format_obs(obs, task_num, len(args.tasks))
+
     for step in range(args.total_steps):
         task_id = agent.predict_task(obs)
         action = agent.get_action(obs, task_id)
@@ -56,7 +58,8 @@ def train_phaseII(args, agent, human_agent, env, replay_buffer):
             obs = env.reset()
             agent.log[args.log_name].info("Train Returns: {:.3f} at iteration {}".format(ep_reward, step))
             agent.tb_writer.log_data("episodic_reward", step, ep_reward)
-            obs, ep_reward, ep_len = np.array(env.reset()['image']), 0, 0
+            obs, ep_reward, ep_len = env.reset(), 0, 0
+            obs = format_obs(obs, task_num, len(args.tasks))
             total_episode_count +=1
 
         # Update handling
