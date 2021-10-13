@@ -10,7 +10,7 @@ class ANetwork(nn.Module):
         self.num_tasks = num_tasks
 
         self.embedding = ConvEncoder().double()
-        self.normalization = LayerNormNLP(output_sizes=(64, 64)).double()
+        self.normalization = LayerNormNLP(output_sizes=(64, 128)).double()
         self.phi = mlp(sizes=(64, self.num_cumulants*self.num_actions), # cumulants - [b, num_cumulants, num_actions]
                              activation=nn.ReLU, output_activation=nn.Identity).double()
         self.assistive_psi = mlp(sizes = (64, self.num_cumulants*self.num_actions),
@@ -54,7 +54,7 @@ class ConvEncoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.embedding =  nn.Sequential(
-            nn.Conv2d(3, 16, (8, 8),stride=4),
+            nn.Conv2d(3, 16, (2, 2),stride=4),
             nn.ReLU(),
             nn.Conv2d(16, 32, (1, 1), stride=2),
             nn.ReLU(),

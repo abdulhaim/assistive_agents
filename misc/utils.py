@@ -63,11 +63,10 @@ def make_env(seed, task=None):
     env.action_space.seed(seed)
     return env
 
-def format_obs(obs, task, num_tasks):
+def format_obs(obs):
     obs = np.array(obs['image'])
     obs_shape = torch.tensor(obs).shape
     obs = torch.reshape(torch.tensor(obs), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2])).double()
-    one_hot = to_onehot(torch.tensor([task]), num_tasks) # TODO: add task ID in observation?
     return obs
 
 def to_onehot(value, dim):

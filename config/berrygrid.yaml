@@ -9,4 +9,5 @@ total_steps: 1000000
 max_episode_steps: 200
 converge: 10000
 discount: 0.99
+start_steps: 1000
 
