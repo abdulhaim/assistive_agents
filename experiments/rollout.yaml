@@ -1,8 +1,0 @@
-# Generating Rollouts
-
-GOALS_COLORS: ['red', 'green', 'blue', 'purple', 'grey']
-NUM_LEARNING_STEPS: 10000
-BATCH_SIZE: 64
-DATA_DIR: data
-EXPERT_EPSILON: 0.1
-num_rollouts: 500
