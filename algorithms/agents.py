@@ -38,11 +38,7 @@ class AAgent(nn.Module):
         return 0 # for now
 
     def itd_loss_fn(self, phi, psi, psi_next, done):
-        print(phi.shape)
-        print(psi_next.shape)
-        print(psi.shape)
-
-        target = phi + self.args.gamma * done * psi_next
+        target = phi + self.args.gamma * torch.einsum("bca, b  -> bca", psi_next, done)
         return target - psi
 
     def q_learning_loss_fn(self, q, a, r, done, q_next):
@@ -78,16 +74,27 @@ class AAgent(nn.Module):
             task_id = self.predict_task()    # TODO: Determine TASK ID
 
         # For Assistant
-        q_input = torch.einsum("bca, c  -> ba", assistant_psi, w_params[task_id]) #psi*w
-        q_next_input =  torch.einsum("bca, c  -> ba", assistant_psi_next, w_params_next[task_id])
-        itd_loss = torch.mean(self.itd_loss_fn(phi, assistant_psi, assistant_psi_next, done))
-        dqn_loss = torch.mean(self.q_learning_loss_fn(q_input, assistant_action, assistant_reward, done, assistant_next_action))
-        bc_loss = torch.mean(self.nll_loss_fn(q_input, assistant_action)) # TODO: not sure if this is correct
-        total_loss = itd_loss + dqn_loss + bc_loss
+        q_input_assistive = torch.einsum("bca, c  -> ba", assistant_psi, w_params[task_id]) #psi*w
+        itd_loss_assistant = torch.mean(self.itd_loss_fn(phi, assistant_psi, assistant_psi_next, done))
+        dqn_loss_assistant = torch.mean(self.q_learning_loss_fn(q_input_assistive, assistant_action, assistant_reward, done, assistant_next_action))
+        bc_loss_assistant = torch.mean(self.nll_loss_fn(q_input_assistive, assistant_action)) # TODO: not sure if this is correct
+
+        if self.human_phase:
+            itd_loss_human = torch.mean(self.itd_loss_fn(phi, human_psi, human_psi_next, done))
+            q_input_human = torch.einsum("bca, c  -> ba", human_psi, w_params[task_id])  # psi*w
+            bc_loss_human = torch.mean(self.nll_loss_fn(q_input_human, human_action))  # TODO: not sure if this is correct
+            total_loss = itd_loss_human + itd_loss_assistant
+            total_loss += dqn_loss_assistant # TODO: No DQN loss for human cause no reward?
+            total_loss += + bc_loss_assistant + bc_loss_human
+        else:
+            total_loss = itd_loss_assistant + dqn_loss_assistant + bc_loss_assistant
+
+
+        self.optimizer.zero_grad()
         total_loss.backward()
         self.optimizer.step()
 
-        # TODO: For Human Phase II
+
 
 
 
