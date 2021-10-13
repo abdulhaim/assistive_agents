@@ -9,17 +9,13 @@ def train_phaseI(args, agent, env, replay_buffer):
     for step in range(args.total_steps):
         action = agent.get_action(obs, task_num)
         next_obs, reward, done, info = env.step(action)
-
-        discount = args.discount**ep_len
         reward = reward[0] # just getting single assistive agent reward
-        next_obs = np.array(next_obs['image'])
-        next_obs_shape = torch.tensor(next_obs).shape
-        next_obs = torch.reshape(torch.tensor(next_obs), (next_obs_shape[0], next_obs_shape[3], next_obs_shape[1], next_obs_shape[2])).double()
+        next_obs = format_obs(next_obs, task_num, len(args.tasks))
 
         ep_len += 1
         ep_reward += reward
         next_action = agent.get_action(next_obs, task_num)
-        replay_buffer.store(obs, action, reward, next_obs, next_action, discount, done)
+        replay_buffer.store(obs, action, reward, next_obs, next_action, done)
 
         obs = next_obs
 

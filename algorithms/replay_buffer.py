@@ -16,7 +16,7 @@ class ReplayBufferPhaseI(object):
         self.done_buf = np.zeros(size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, size
 
-    def store(self, obs, action, reward, next_obs, next_action, discount, done):
+    def store(self, obs, action, reward, next_obs, next_action, done):
         self.obs_buf[self.ptr] = obs
         self.assistant_action_buf[self.ptr] = action
         self.assistant_reward_buf[self.ptr] = reward
@@ -50,7 +50,6 @@ class ReplayBufferPhaseII(object):
         self.next_obs_buf = np.zeros((size, obs_dim[0], obs_dim[1], obs_dim[2]), dtype=np.float32)
         self.assistant_next_action_buf = np.zeros(combined_shape(size, act_dim), dtype=np.float32)
         self.human_next_action_buf = np.zeros(combined_shape(size, act_dim), dtype=np.float32)
-        self.discount_buf = np.zeros(size, dtype=np.float32)
         self.done_buf = np.zeros(size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, size
 

@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 
 class ANetwork(nn.Module):
-    def __init__(self, num_actions, num_cumulants, num_demonstrators, human_phase, num_tasks):
+    def __init__(self, num_actions, num_cumulants, human_phase, num_tasks):
         super().__init__()
         self.num_actions = num_actions
         self.num_cumulants = num_cumulants
-        self.num_demonstrators = num_demonstrators
         self.human_phase = human_phase
         self.num_tasks = num_tasks
 
@@ -14,7 +13,7 @@ class ANetwork(nn.Module):
         self.normalization = LayerNormNLP(output_sizes=(64, 64)).double()
         self.phi = mlp(sizes=(64, self.num_cumulants*self.num_actions), # cumulants - [b, num_cumulants, num_actions]
                              activation=nn.ReLU, output_activation=nn.Identity).double()
-        self.assistive_psi = mlp(sizes = (64, self.num_tasks*self.num_cumulants*self.num_actions),
+        self.assistive_psi = mlp(sizes = (64, self.num_cumulants*self.num_actions),
                                       activation=nn.ReLU, output_activation=nn.Identity).double() # successor - [b, num_cumulants, num_actions]
 
         if self.human_phase:
@@ -27,13 +26,15 @@ class ANetwork(nn.Module):
         embedding = self.embedding(obs.double())
         after_norm = self.normalization(embedding)
         phi = self.phi(after_norm)
-        phi = torch.reshape(phi, (obs.shape[0], self.num_cumulants, self.num_actions))    # [b, num_cumulants, num_actions]
-        assistive_psi = self.assistive_psi(after_norm)  # [b, num_demonstrators, num_cumulants, num_actions] # TODO:
-        assistive_psi = torch.reshape(assistive_psi, (obs.shape[0], self.num_tasks, self.num_cumulants, self.num_actions))  # [task_size, num_cumulants, actions]
-        assistive_rewards = torch.einsum("tc, bca  -> bta", self.w, phi) # [b, task_size, num_actions]
-        assistive_policy_params =  torch.einsum("tc, btca  -> bca", self.w, assistive_psi) # [b, num_cumulants, num_actions]
+        phi = torch.reshape(phi, (obs.shape[0], self.num_cumulants, self.num_actions))
+        assistive_psi = self.assistive_psi(after_norm)
+        assistive_psi = torch.reshape(assistive_psi, (obs.shape[0], self.num_cumulants, self.num_actions))
+
+        assistive_rewards = torch.einsum("tc, bca  -> bta", self.w, phi)
+        assistive_policy_params =  torch.einsum("tc, bca  -> ba", self.w, assistive_psi) # [b, num_cumulants, num_actions]
+
         if self.human_phase:
-            human_psi = self.human_psi(after_norm)  # [b, num_demonstrators, num_cumulants, num_actions] # TODO:
+            human_psi = self.human_psi(after_norm)  # [b, num_demonstrators, num_cumulants, num_actions]
             human_psi = torch.reshape(human_psi, (obs.shape[0], self.num_tasks, self.num_cumulants, self.num_actions))  # [num_demonstrators, num_cumulants]
             human_rewards = torch.einsum("tc, bca  -> bta", self.w, phi)  # [b, task_size, num_actions]
             human_policy_params = torch.einsum("tc, btca  -> bca", self.w, human_psi)  # [b, num_cumulants, num_actions]

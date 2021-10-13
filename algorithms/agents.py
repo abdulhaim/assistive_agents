@@ -16,16 +16,15 @@ class AAgent(nn.Module):
         self.num_tasks = len(args.tasks)
         self.num_actions = 7
         self.num_demonstrators = 1
-        self.network = ANetwork(self.num_actions, self.args.num_cumulants, self.args.num_demonstrators, args.human_phase, self.num_tasks)
+        self.network = ANetwork(self.num_actions, self.args.num_cumulants, args.human_phase, self.num_tasks)
         self.optimizer = Adam(self.network.parameters(), lr=args.lr)
 
     def get_action(self, obs, task_id):
         embedding = self.network.embedding(obs)
         after_norm = self.network.normalization(embedding)
-
         assistive_psi = self.network.assistive_psi(after_norm)
-        assistive_psi = torch.reshape(assistive_psi, (1, self.num_tasks, self.args.num_cumulants, self.num_actions))  # TODO: should we have task dimension here? [b, task_size, num_cumulants, actions]
-        assistive_actions = torch.einsum("btca, c  -> bta", assistive_psi, self.network.w[task_id]) # [b, task_size, num_actions]
+        assistive_psi = torch.reshape(assistive_psi, (1, self.args.num_cumulants, self.num_actions))
+        assistive_actions = torch.einsum("bca, c  -> ba", assistive_psi, self.network.w[task_id])
         assistive_actions = assistive_actions.squeeze(0)
         action = torch.argmax(assistive_actions[task_id])
         if self.args.human_phase:
@@ -38,13 +37,13 @@ class AAgent(nn.Module):
         # TODO: Should we have net for predicting task?
         return 0 # for now
 
-    def itd_loss_fn(self, q, a, r, done, q_next, a_next):
-        a_next = torch.tensor(a_next, dtype=torch.int64)
-        q_next_gather = torch.gather(q_next, 1, a_next)
-        a = torch.tensor(a, dtype=torch.int64)
-        q_gather = torch.gather(q, 1, a)
-        target = r + self.args.gamma * done * q_next_gather
-        return target - q_gather
+    def itd_loss_fn(self, phi, psi, psi_next, done):
+        print(phi.shape)
+        print(psi_next.shape)
+        print(psi.shape)
+
+        target = phi + self.args.gamma * done * psi_next
+        return target - psi
 
     def q_learning_loss_fn(self, q, a, r, done, q_next):
         target = r + self.args.gamma * done * torch.max(q_next)
@@ -54,7 +53,7 @@ class AAgent(nn.Module):
 
     def nll_loss_fn(self, logits, target):
         distribution = torch.distributions.Categorical(logits=logits)
-        return -distribution.log_prob(target)
+        return -distribution.log_prob(target).sum(axis=-1)
 
     def update_loss(self, data, task_id):
         # Get Assistant
@@ -79,16 +78,17 @@ class AAgent(nn.Module):
             task_id = self.predict_task()    # TODO: Determine TASK ID
 
         # For Assistant
-        q_input = torch.einsum("btca, c  -> bta", assistant_psi, w_params[task_id])[:, task_id]
-        q_next_input =  torch.einsum("btca, c  -> bta", assistant_psi_next, w_params_next[task_id])[:, task_id]
-        itd_loss = torch.mean(self.itd_loss_fn(q_input, assistant_action, assistant_reward, done, q_next_input, assistant_next_action))
+        q_input = torch.einsum("bca, c  -> ba", assistant_psi, w_params[task_id]) #psi*w
+        q_next_input =  torch.einsum("bca, c  -> ba", assistant_psi_next, w_params_next[task_id])
+        itd_loss = torch.mean(self.itd_loss_fn(phi, assistant_psi, assistant_psi_next, done))
         dqn_loss = torch.mean(self.q_learning_loss_fn(q_input, assistant_action, assistant_reward, done, assistant_next_action))
-        # bc_loss = self.nll_loss_fn(q_input, assistant_action) # TODO: not sure if this is correct
-        total_loss = itd_loss + dqn_loss
+        bc_loss = torch.mean(self.nll_loss_fn(q_input, assistant_action)) # TODO: not sure if this is correct
+        total_loss = itd_loss + dqn_loss + bc_loss
         total_loss.backward()
         self.optimizer.step()
 
         # TODO: For Human Phase II
+
 
 
 
