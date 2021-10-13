@@ -3,4 +3,4 @@ logs
 logs_tensorboard
 model
 **/__pycache__/
-**/idea
+**/.idea

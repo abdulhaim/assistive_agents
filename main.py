@@ -49,19 +49,16 @@ def main(args):
                               act_dim=env.action_space.shape,
                               size=args.buffer_size)
 
-    from algorithms.agents import AAgent
+    from algorithms.agents import AssistiveModel
     # Set Assistant Agent
-    r_agent = AAgent(env= env,
-                     args = args,
-                     log = log,
-                     tb_writer = tb_writer)
+    r_agent = AssistiveModel(env = env,
+                            args = args,
+                            log = log,
+                            tb_writer = tb_writer)
 
     # Set Phase 1 Training
     if args.human_phase:
         from trainer import train_phaseII
-        human_agent = AAgent(env= env, args = args, log = log, tb_writer = tb_writer) # TODO: initialize human differently later
-        model_dict = torch.load(args.human_model_name)
-        human_agent.load_state_dict(model_dict)
         train_phaseII(args, r_agent, human_agent, env, buffer)
     else:
         from trainer import train_phaseI

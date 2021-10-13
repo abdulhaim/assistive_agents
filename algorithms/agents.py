@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from algorithms.models import ANetwork
+from algorithms.models import Network
 
-class AAgent(nn.Module):
+class AssistiveModel(nn.Module):
     def __init__(self, env, args, log, tb_writer):
-        super(AAgent, self).__init__()
+        super(AssistiveModel, self).__init__()
         self.args = args
         self.tb_writer = tb_writer
         self.log = log
@@ -17,10 +17,11 @@ class AAgent(nn.Module):
         self.num_tasks = len(args.tasks)
         self.num_actions = 7
         self.num_demonstrators = 1
-        self.network = ANetwork(self.num_actions, self.args.num_cumulants, args.human_phase, self.num_tasks)
+        self.network = Network(self.num_actions, self.args.num_cumulants, args.human_phase, self.num_tasks)
         self.optimizer = Adam(self.network.parameters(), lr=args.lr)
         self.iteration = 0
-    def get_action(self, obs, task_id):
+
+    def get_action(self, obs, task_id, evaluation=False):
         if self.iteration < self.args.start_steps:
             action = self.env.action_space.sample()
             return action
@@ -30,13 +31,12 @@ class AAgent(nn.Module):
             assistive_psi = self.network.assistive_psi(after_norm)
             assistive_psi = torch.reshape(assistive_psi, (1, self.args.num_cumulants, self.num_actions))
             assistive_actions = torch.einsum("bca, c  -> ba", assistive_psi, self.network.w[task_id])
-            assistive_actions = assistive_actions.squeeze(0)
-            action = [torch.argmax(assistive_actions).item()]
-            if self.args.human_phase:
-                # TODO: Not sure what to do here since there shouldn't be access to human action?
-                return
+            if evaluation:
+                assistive_action = [torch.argmax(assistive_actions.squeeze(0)).item()]
             else:
-                return action
+                policy = torch.distributions.Categorical(logits=assistive_actions)
+                assistive_action = policy.sample()  # [B]
+            return assistive_action
 
     def predict_task(self, obs):
         # TODO: Should we have net for predicting task?

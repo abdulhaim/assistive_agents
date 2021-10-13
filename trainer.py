@@ -1,6 +1,6 @@
 import numpy as np
-import torch
 from misc.utils import make_env, format_obs
+
 def train_phaseI(args, agent, env, replay_buffer):
     total_episode_count = 0
     obs, ep_reward, ep_len, task_num = env.reset(), 0, 0, 0

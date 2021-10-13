@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class ANetwork(nn.Module):
+class Network(nn.Module):
     def __init__(self, num_actions, num_cumulants, human_phase, num_tasks):
         super().__init__()
         self.num_actions = num_actions
@@ -17,10 +17,9 @@ class ANetwork(nn.Module):
                                       activation=nn.ReLU, output_activation=nn.Identity).double() # successor - [b, num_cumulants, num_actions]
 
         if self.human_phase:
-            self.human_psi = self.assistive_psi.copy()
+            self.human_psi = self.assistive_psi.copy() # TODO: load this from network later
 
         self.w = nn.Parameter(torch.randn(self.num_tasks, self.num_cumulants)).double() # preference vector: [task_size, num_cumulants]
-        # TODO: Selecting right preference vector based on task ID
 
     def forward(self, obs):
         embedding = self.embedding(obs.double())
@@ -78,7 +77,6 @@ class LayerNormNLP(nn.Module):
                                         nn.Tanh())
         # mlp module
         self.mlp_layer = mlp(output_sizes[1:], nn.ReLU(), output_activation=nn.ReLU)
-
 
     def forward(self, embedding):
         embedding = self.linear_layer(embedding)
