@@ -31,13 +31,13 @@ class ANetwork(nn.Module):
         assistive_psi = torch.reshape(assistive_psi, (obs.shape[0], self.num_cumulants, self.num_actions))
 
         assistive_rewards = torch.einsum("tc, bca  -> bta", self.w, phi)
-        assistive_policy_params =  torch.einsum("tc, bca  -> ba", self.w, assistive_psi) # [b, num_cumulants, num_actions]
+        assistive_policy_params =  torch.einsum("tc, bca  -> bta", self.w, assistive_psi) # [b, num_cumulants, num_actions]
 
         if self.human_phase:
             human_psi = self.human_psi(after_norm)  # [b, num_demonstrators, num_cumulants, num_actions]
             human_psi = torch.reshape(human_psi, (obs.shape[0], self.num_tasks, self.num_cumulants, self.num_actions))  # [num_demonstrators, num_cumulants]
             human_rewards = torch.einsum("tc, bca  -> bta", self.w, phi)  # [b, task_size, num_actions]
-            human_policy_params = torch.einsum("tc, btca  -> bca", self.w, human_psi)  # [b, num_cumulants, num_actions]
+            human_policy_params = torch.einsum("tc, btca  -> bta", self.w, human_psi)  # [b, num_cumulants, num_actions]
             return phi, assistive_psi, human_psi, self.w, assistive_rewards, human_rewards, assistive_policy_params, human_policy_params
         else:
             return phi, assistive_psi, None, self.w, assistive_rewards, None, assistive_policy_params, None
@@ -54,7 +54,7 @@ class ConvEncoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.embedding =  nn.Sequential(
-            nn.Conv2d(3, 16, (2, 2),stride=4),
+            nn.Conv2d(3, 16, (3, 3),stride=4),
             nn.ReLU(),
             nn.Conv2d(16, 32, (1, 1), stride=2),
             nn.ReLU(),
@@ -74,7 +74,7 @@ class LayerNormNLP(nn.Module):
         self.linear_layer = nn.Linear(32, self.output_sizes[0])
 
         # normalisation layer.
-        self.norm_layer = nn.Sequential(nn.LayerNorm(64), # over the last dimension, not sure how to create_scale & create_offset
+        self.norm_layer = nn.Sequential(nn.LayerNorm(self.output_sizes[0]), # over the last dimension, not sure how to create_scale & create_offset
                                         nn.Tanh())
         # mlp module
         self.mlp_layer = mlp(output_sizes[1:], nn.ReLU(), output_activation=nn.ReLU)

@@ -2,5 +2,5 @@ berrygrid
 logs
 logs_tensorboard
 model
-.idea/
-__pycache__
+**/__pycache__/
+**/idea
