@@ -59,7 +59,7 @@ def main(args):
     # Set Phase 1 Training
     if args.human_phase:
         from trainer import train_phaseII
-        train_phaseII(args, r_agent, human_agent, env, buffer)
+        train_phaseII(args, r_agent, env, buffer)
     else:
         from trainer import train_phaseI
         train_phaseI(args, r_agent, env, buffer)

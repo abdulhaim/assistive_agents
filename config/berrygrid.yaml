@@ -5,9 +5,9 @@ tasks: ["red", "green", "blue", "purple", "grey"]
 num_cumulants: 10
 num_demonstrators: 1
 human_phase: False
-total_steps: 1000000
+total_steps: 10000000
 max_episode_steps: 200
-converge: 10000
+converge: 100000
 discount: 0.99
 start_steps: 1000
 
