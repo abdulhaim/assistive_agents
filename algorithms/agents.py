@@ -107,9 +107,12 @@ class AssistiveModel(nn.Module):
             bc_loss_human = torch.mean(self.nll_loss_fn(human_action, human_q_k, next_human_action))
             self.tb_writer.log_data("human_loss/bc_loss", self.iteration, bc_loss_human.item())
 
-            total_loss = itd_loss_human + itd_loss_assistant
-            total_loss += dqn_loss_assistant + reward_loss_assistant
-            total_loss += + bc_loss_human
+            total_loss = itd_loss_assistant + dqn_loss_assistant + reward_loss_assistant
+            if self.args.alternate_loss:
+                total_loss += itd_loss_human if self.index_alternate else bc_loss_human
+            else:
+                total_loss += itd_loss_human + bc_loss_human
+
         else:
             total_loss = itd_loss_assistant + dqn_loss_assistant + reward_loss_assistant
 

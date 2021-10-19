@@ -10,4 +10,5 @@ max_episode_steps: 200
 converge: 100000
 discount: 0.99
 start_steps: 1000
+alternate_loss: False
 

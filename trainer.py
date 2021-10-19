@@ -39,7 +39,7 @@ def train_phaseI(args, agent, env, replay_buffer):
         agent.iteration = step
 
 
-def train_phaseII(args, agent, human_agent, env, replay_buffer):
+def train_phaseII(args, agent, env, replay_buffer): # TODO: needs work
     total_episode_count = 0
     obs, ep_reward, ep_len, task_num = env.reset(), 0, 0, 0
     obs = format_obs(obs, task_num, len(args.tasks))
