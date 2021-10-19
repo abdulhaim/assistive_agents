@@ -11,17 +11,17 @@ class ReplayBufferPhaseI(object):
         self.obs_buf = np.zeros((size, obs_dim[2], obs_dim[0], obs_dim[1]), dtype=np.float32)
         self.assistant_action_buf = np.zeros(combined_shape(size, act_dim), dtype=np.float32)
         self.assistant_reward_buf = np.zeros(size, dtype=np.float32)
-        self.prev_obs_buf = np.zeros((size, obs_dim[2], obs_dim[0], obs_dim[1]), dtype=np.float32)
-        self.assistant_prev_action_buf = np.zeros(combined_shape(size, act_dim), dtype=np.float32)
+        self.next_obs_buf = np.zeros((size, obs_dim[2], obs_dim[0], obs_dim[1]), dtype=np.float32)
+        self.next_assistant_action_buf = np.zeros(combined_shape(size, act_dim), dtype=np.float32)
         self.done_buf = np.zeros(size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, size
 
-    def store(self, obs, action, reward, prev_obs, prev_action, done):
+    def store(self, obs, action, reward, next_obs, next_action, done):
         self.obs_buf[self.ptr] = obs
         self.assistant_action_buf[self.ptr] = action
         self.assistant_reward_buf[self.ptr] = reward
-        self.prev_obs_buf[self.ptr] = prev_obs
-        self.assistant_prev_action_buf[self.ptr] = prev_action
+        self.next_obs_buf[self.ptr] = next_obs
+        self.next_assistant_action_buf[self.ptr] = next_action
         self.done_buf[self.ptr] = done
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
@@ -32,8 +32,8 @@ class ReplayBufferPhaseI(object):
             obs=self.obs_buf[idxs],
             assistant_action=self.assistant_action_buf[idxs],
             assistant_reward=self.assistant_reward_buf[idxs],
-            prev_obs=self.prev_obs_buf[idxs],
-            assistant_prev_action=self.assistant_prev_action_buf[idxs],
+            next_obs=self. next_obs_buf[idxs],
+            next_assistant_action=self.next_assistant_action_buf[idxs],
             done=self.done_buf[idxs])
         return {k: torch.as_tensor(v, dtype=torch.double) for k, v in batch.items()}
 

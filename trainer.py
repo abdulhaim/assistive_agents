@@ -5,21 +5,19 @@ def train_phaseI(args, agent, env, replay_buffer):
     total_episode_count = 0
     obs, ep_reward, ep_len, task_num = env.reset(), 0, 0, 0
     obs = format_obs(obs)
-    prev_obs = obs
     action = agent.get_action(obs, task_num)
 
     for step in range(args.total_steps):
-        prev_action = action
-        action = agent.get_action(obs, task_num)
         next_obs, reward, done, info = env.step([action])
         reward = reward[0] # just getting single assistive agent reward
         next_obs = format_obs(next_obs)
         ep_len += 1
         ep_reward += reward
-        replay_buffer.store(obs, action, reward, prev_obs, prev_action, done)
-        # env.render()
-        prev_obs = obs
+        next_action = agent.get_action(obs, task_num)
+        replay_buffer.store(obs, action, reward, next_obs, next_action, done)
         obs = next_obs
+        action = next_action
+
         if done or ep_len == env.max_episode_steps:
             agent.log[args.log_name].info("Train Returns: {:.3f} at iteration {}".format(ep_reward, step))
             agent.tb_writer.log_data("episodic_reward", step, ep_reward)

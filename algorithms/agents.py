@@ -46,65 +46,65 @@ class AssistiveModel(nn.Module):
         # TODO: Should we have net for predicting task?
         return 0 # for now
 
-    def itd_loss_fn(self, phi, psi, psi_prev, done):
+    def itd_loss_fn(self, phi, psi, next_psi, done):
         target = phi + self.args.gamma * torch.einsum("bca, b  -> bca", psi.detach(), done)
-        return self.mse_loss(target, psi_prev)
+        return self.mse_loss(target, next_psi)
 
-    def q_learning_loss_fn(self, q, r, done, q_prev, a_prev):
+    def q_learning_loss_fn(self, q, a, r, done, q_next):
         target = r + self.args.gamma * done * torch.max(q).detach()
-        return self.mse_loss(target,  torch.gather(q_prev, 1, a_prev.type(torch.int64)))
+        return self.mse_loss(target,  torch.gather(q_next, 1, a.type(torch.int64)))
 
-    def nll_loss_fn(self, action, q_prev, prev_action):
+    def nll_loss_fn(self, action, q_next, next_action):
         # only for human - cross entropy between (one-hot) real action of human and the softmax of q of human.
-        return self.cross_entropy_loss(to_onehot(action), self.softmax(torch.gather(q_prev, 1, prev_action)))
+        return self.cross_entropy_loss(to_onehot(action), self.softmax(torch.gather(q_next, 1, next_action)))
 
-    def reward_loss(self, reward, computed_reward,action, task_id):
+    def reward_loss(self, real_reward, computed_reward, action, task_id):
         computed =  computed_reward[:, task_id]
         computed = torch.gather(computed, 1, action.type(torch.int64))
-        return self.mse_loss(reward.unsqueeze(-1), computed)
+        return self.mse_loss(real_reward.unsqueeze(-1), computed)
 
     def update_loss(self, data, task_id):
         # Get Assistant
         if self.human_phase:
-            obs, assistant_action, human_action, assistant_reward, prev_obs, assistant_prev_action, human_prev_action, done  = \
-                data['obs'],  data['assistant_action'], data['human_action'], data['assistant_reward'], data['next_obs'], data['assistant_prev_action'], data['human_prev_action'], data['done']
+            obs, assistant_action, human_action, real_assistant_reward, next_obs, next_assistant_action, next_human_action, done  = \
+                data['obs'],  data['assistant_action'], data['human_action'], data['assistant_reward'], data['next_obs'], data['next_assistant_action'], data['next_human_action'], data['done']
         else:
-            obs, assistant_action, assistant_reward, prev_obs, assistant_prev_action, done  = \
-                data['obs'],  data['assistant_action'], data['assistant_reward'], data['prev_obs'], data['assistant_prev_action'], data['done']
+            obs, assistant_action, real_assistant_reward, next_obs, next_assistant_action, done  = \
+                data['obs'],  data['assistant_action'], data['assistant_reward'], data['next_obs'], data['next_assistant_action'], data['done']
 
         self.optimizer.zero_grad()
 
         # For Assistant Agent Phase I
-        # Calculate the successor features for time-step `t` and `t+1` (next)
+        # Calculate the successor features for time-step `t` and `t+1`
         phi, assistant_psi, human_psi, w_params, \
-            assistant_rewards, human_rewards, \
+            computed_assistant_rewards, human_rewards, \
             assistant_q, human_q = self.network(obs)
 
-        phi_prev, assistant_psi_prev, human_psi_prev, w_params_prev, \
-            assistant_rewards_prev, human_rewards_prev, \
-            assistant_q_prev, human_q_prev = self.network(prev_obs)
+        next_phi, next_assistant_psi, next_human_phi, next_w_params, \
+            next_computed_assistant_rewards, next_human_rewards, \
+            next_assistant_q, next_human_q = self.network(next_obs)
 
         if self.args.human_phase:
             task_id = self.predict_task()    # TODO: Determine TASK ID
 
         # For Assistant
-        itd_loss_assistant = self.itd_loss_fn(phi, assistant_psi, assistant_psi_prev, done)
+        itd_loss_assistant = self.itd_loss_fn(phi, assistant_psi, next_assistant_psi, done)
         self.tb_writer.log_data("assistant_loss/itd_loss", self.iteration, itd_loss_assistant.item())
 
         assistant_q_k = assistant_q[:, task_id]
-        assistant_q_prev_k = assistant_q_prev[:, task_id]
-        dqn_loss_assistant = self.q_learning_loss_fn(assistant_q_k, assistant_reward, done, assistant_q_prev_k, assistant_prev_action)
+        next_assistant_q_k = next_assistant_q[:, task_id]
+        dqn_loss_assistant = self.q_learning_loss_fn(assistant_q_k, assistant_action, real_assistant_reward, done, next_assistant_q_k)
         self.tb_writer.log_data("assistant_loss/dqn_loss", self.iteration, dqn_loss_assistant.item())
 
-        reward_loss_assistant = self.reward_loss(assistant_reward, assistant_rewards, assistant_action, task_id)
+        reward_loss_assistant = self.reward_loss(real_assistant_reward, computed_assistant_rewards, assistant_action, task_id)
         self.tb_writer.log_data("assistant_loss/reward_loss", self.iteration, reward_loss_assistant.item())
 
         if self.human_phase:
-            itd_loss_human = torch.mean(self.itd_loss_fn(phi, human_psi, human_psi_prev, done))
+            itd_loss_human = torch.mean(self.itd_loss_fn(phi, human_psi, next_human_phi, done))
             self.tb_writer.log_data("human_loss/itd_loss", self.iteration, itd_loss_human.item())
 
-            human_q_prev_k = human_q_prev[:, task_id]
-            bc_loss_human = torch.mean(self.nll_loss_fn(human_action, human_q_prev_k, human_prev_action))
+            human_q_k = human_q[:, task_id]
+            bc_loss_human = torch.mean(self.nll_loss_fn(human_action, human_q_k, next_human_action))
             self.tb_writer.log_data("human_loss/bc_loss", self.iteration, bc_loss_human.item())
 
             total_loss = itd_loss_human + itd_loss_assistant
