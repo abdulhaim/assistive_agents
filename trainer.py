@@ -23,7 +23,7 @@ def train_phaseI(args, agent, env, replay_buffer):
             agent.tb_writer.log_data("episodic_reward", step, ep_reward)
             obs, ep_reward, ep_len = env.reset(), 0, 0
             obs = format_obs(obs)
-            prev_obs = obs
+            action = agent.get_action(obs, task_num)
             total_episode_count +=1
 
         # Update handling
