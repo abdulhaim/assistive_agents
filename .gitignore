@@ -4,3 +4,4 @@ logs_tensorboard
 model
 **/__pycache__/
 **/.idea
+.DS_STORE

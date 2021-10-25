@@ -4,11 +4,15 @@ import os
 import random
 import torch
 import numpy as np
+import gym
+import berrygrid
+
 from misc.utils import set_log, load_config
 from misc.logger import TensorBoardLogger
 from misc.arguments import args
-import gym
-import berrygrid
+from algorithms.replay_buffer import ReplayBufferPhaseI, ReplayBufferPhaseII
+from algorithms.agents import AssistiveModel, HumanModel
+from trainer import train_phaseI, train_phaseII
 
 torch.set_num_threads(3)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,19 +41,18 @@ def main(args):
         torch.cuda.manual_seed(args.seed)
 
     if args.human_phase:
-        from algorithms.replay_buffer import ReplayBufferPhaseII
         observation_shape = np.array(env.reset()['image']).shape
         buffer = ReplayBufferPhaseII(obs_dim=observation_shape[1:],
                               act_dim=env.action_space.shape,
                               size=args.buffer_size)
+
+        
     else:
-        from algorithms.replay_buffer import ReplayBufferPhaseI
         observation_shape = np.array(env.reset()['image']).shape
         buffer = ReplayBufferPhaseI(obs_dim=observation_shape[1:],
                               act_dim=env.action_space.shape,
                               size=args.buffer_size)
 
-    from algorithms.agents import AssistiveModel
     # Set Assistant Agent
     r_agent = AssistiveModel(env = env,
                             args = args,
@@ -58,10 +61,13 @@ def main(args):
 
     # Set Phase 1 Training
     if args.human_phase:
-        from trainer import train_phaseII
-        train_phaseII(args, r_agent, env, buffer)
+        human_agent = HumanModel(args)
+        human_agent.load_state_dict(torch.load(args.human_model))
+
+        replay_buffer
+
+        train_phaseII(args, r_agent, human_agent, env, buffer)
     else:
-        from trainer import train_phaseI
         train_phaseI(args, r_agent, env, buffer)
 
 if __name__ == '__main__':

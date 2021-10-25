@@ -4,6 +4,16 @@ import numpy as np
 import random
 import torch
 
+COLOR_TO_IDX = {
+    'red'   : 0,
+    'orange': 1,
+    'green' : 2,
+    'blue'  : 3,
+    'purple': 4,
+    'yellow': 5,
+    'grey'  : 6
+}
+
 def load_config(args, path="."):
     """Loads and replaces default parameters with experiment
     specific parameters
@@ -58,6 +68,7 @@ def make_env(seed, task=None):
         tasks = ["red", "green", "blue", "purple", "grey"]
         random_color = random.choice(tasks)
         env = gym.make("MultiGrid-Color-Gather-Env-8x8-v0",  kwargs={'color_pick': random_color})
+        env.max_episode_steps = env.max_steps
 
     env.seed(seed)
     env.action_space.seed(seed)
@@ -68,6 +79,10 @@ def format_obs(obs):
     obs_shape = torch.tensor(obs).shape
     obs = torch.reshape(torch.tensor(obs), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2])).double()
     return obs
+
+def get_color(obs):
+    return  COLOR_TO_IDX[obs['color']]
+
 
 def to_onehot(value, dim):
     """Convert batch of numbers to onehot
