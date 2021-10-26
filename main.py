@@ -31,7 +31,7 @@ def main(args):
     tb_writer = TensorBoardLogger(logdir="./logs_tensorboard/", run_name=args.log_name + time.ctime())
 
     # Set seeds
-    env = make_env(args.seed, "red")
+    env = make_env(args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)

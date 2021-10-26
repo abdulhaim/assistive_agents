@@ -15,6 +15,7 @@ def train_phaseI(args, agent, env, replay_buffer):
         next_obs = format_obs(next_obs)
         ep_len += 1
         ep_reward += reward
+
         next_action = agent.get_action(obs)
         replay_buffer.store(obs, action, reward, next_obs, next_action, done)
         obs = next_obs
@@ -25,7 +26,7 @@ def train_phaseI(args, agent, env, replay_buffer):
         if done or ep_len == env.max_episode_steps:
             agent.log[args.log_name].info("Train Returns: {:.3f} at iteration {}".format(ep_reward, step))
             agent.tb_writer.log_data("episodic_reward", step, ep_reward)
-            env = make_env(args.seed, "red")
+            env = make_env(args.seed)
             obs, ep_reward, ep_len = env.reset(), 0, 0
             task = get_color(obs)
             agent.network.task_id = task
