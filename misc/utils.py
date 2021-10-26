@@ -4,6 +4,12 @@ import numpy as np
 import random
 import torch
 
+# Setting CUDA USE
+use_cuda = torch.cuda.is_available()
+if use_cuda:
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+device = torch.device("cuda" if use_cuda else "cpu")
+
 COLOR_TO_IDX = {
     'red'   : 0,
     'orange': 1,
@@ -64,6 +70,8 @@ def make_env(seed, task=None):
     import berrygrid
     if task:
         env = gym.make("MultiGrid-Color-Gather-Env-8x8-v0", kwargs={'color_pick': task})
+        env.max_episode_steps = env.max_steps
+
     else:
         tasks = ["red", "green", "blue", "purple", "grey"]
         random_color = random.choice(tasks)
@@ -77,7 +85,7 @@ def make_env(seed, task=None):
 def format_obs(obs):
     obs = np.array(obs['image'])
     obs_shape = torch.tensor(obs).shape
-    obs = torch.reshape(torch.tensor(obs), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2])).double()
+    obs = torch.reshape(tensor(obs), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2]))
     return obs
 
 def get_color(obs):
@@ -95,3 +103,9 @@ def to_onehot(value, dim):
     one_hot = torch.zeros(value.shape[0], dim)
     one_hot[torch.arange(value.shape[0]), value.long()] = 1
     return one_hot
+
+def tensor(x):
+    if isinstance(x, torch.Tensor):
+        return x.to(device).float()
+    x = torch.tensor(x, device=device)
+    return x.to(device).float()
