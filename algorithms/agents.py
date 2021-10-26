@@ -129,7 +129,6 @@ class AssistiveModel(nn.Module):
         if self.gradient_steps % self.args.target_update_freq == 0:
             self.target_network.assistive_psi.load_state_dict(self.network.assistive_psi.state_dict())
 
-
     def save_human_expert(self):
         observation_shape = np.array(self.env.reset()['image']).shape
 

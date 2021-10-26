@@ -54,8 +54,9 @@ class Network(nn.Module):
 
 
     def load_phaseII(self, args):
-        r_agent = self.load_state_dict(torch.load(args.human_model))
-        self.human_psi = self.assistive_psi.copy() # TODO: load this from network later, make sure this is a seperate function
+        self.load_state_dict(torch.load(args.human_model), strict=False)
+        self.human_psi = self.assistive_psi.copy()
+        self.w = nn.Parameter(torch.randn(self.num_cumulants))
 
 def mlp(sizes, activation, output_activation):
     layers = []

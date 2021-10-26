@@ -57,11 +57,7 @@ def main(args):
 
     # Set Phase 1 Training
     if args.phaseII:
-        r_agent = AssistiveModel(env=env,
-                                 args=args,
-                                 log=log,
-                                 tb_writer=tb_writer)
-
+        r_agent.network.load_phaseII(args)
         train_phaseII(args, r_agent, env, buffer)
     else:
         train_phaseI(args, r_agent, env, buffer)
