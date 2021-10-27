@@ -86,7 +86,7 @@ class LayerNormNLP(nn.Module):
         self.num_tasks = num_tasks
 
         # first linear layer.
-        self.linear_layer = nn.Linear(32 + self.num_tasks, self.output_sizes[0])
+        self.linear_layer = nn.Linear(8192 + self.num_tasks, self.output_sizes[0])
 
         # normalisation layer.
         self.norm_layer = nn.Sequential(nn.LayerNorm(self.output_sizes[0]), # over the last dimension, not sure how to create_scale & create_offset

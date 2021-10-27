@@ -48,6 +48,7 @@ class AssistiveModel(nn.Module):
                 one_hot_task = to_onehot(tensor(self.network.task_id).unsqueeze(0), dim=self.num_tasks)
                 one_hot_task = one_hot_task.expand(embedding.shape[0], -1)
                 embedding = torch.cat([embedding, one_hot_task], dim=-1)
+
             after_norm = self.network.normalization(embedding)
             assistive_psi = self.network.assistive_psi(after_norm)
             assistive_psi = torch.reshape(assistive_psi, (self.args.num_cumulants, self.num_actions))

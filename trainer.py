@@ -1,4 +1,5 @@
 from misc.utils import make_env, format_obs, get_color
+import numpy as np
 
 def train_phaseI(args, agent, env, replay_buffer):
     total_episode_count = 0
@@ -12,8 +13,17 @@ def train_phaseI(args, agent, env, replay_buffer):
     for step in range(args.total_steps_phaseI):
         next_obs, reward, done, info = env.step([action])
         reward = reward[0] # just getting single assistive agent reward
+
+        # new_obs = np.array(next_obs['img'])
+        # import matplotlib.pyplot as plt
+        # plt.imshow(new_obs)
+        # plt.savefig("grid_ind" + str(step) + ".svg")
+
         next_obs = format_obs(next_obs)
+        
         ep_len += 1
+        if reward == 1:
+            done = True
         ep_reward += reward
 
         next_action = agent.get_action(obs)
@@ -26,7 +36,7 @@ def train_phaseI(args, agent, env, replay_buffer):
         if done or ep_len == env.max_episode_steps:
             agent.log[args.log_name].info("Train Returns: {:.3f} at iteration {}".format(ep_reward, step))
             agent.tb_writer.log_data("episodic_reward", step, ep_reward)
-            env = make_env(args.seed)
+            env = make_env(args.seed, "red")
             obs, ep_reward, ep_len = env.reset(), 0, 0
             task = get_color(obs)
             agent.network.task_id = task

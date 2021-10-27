@@ -8,7 +8,7 @@ import gym
 import pickle
 import berrygrid
 
-from misc.utils import make_env, set_log, load_config
+from misc.utils import make_env, set_log, load_config, tensor
 from misc.logger import TensorBoardLogger
 from misc.arguments import args
 from algorithms.replay_buffer import ReplayBufferPhaseI
@@ -31,7 +31,7 @@ def main(args):
     tb_writer = TensorBoardLogger(logdir="./logs_tensorboard/", run_name=args.log_name + time.ctime())
 
     # Set seeds
-    env = make_env(args.seed)
+    env = make_env(args.seed, "red")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -44,7 +44,7 @@ def main(args):
         file = open("buffer.obj", 'rb')
         buffer = pickle.load(file)
     else:
-        observation_shape = np.array(env.reset()['image']).shape
+        observation_shape = np.array(tensor(env.reset()['img']).unsqueeze(0)).shape
         buffer = ReplayBufferPhaseI(obs_dim=observation_shape[1:],
                               act_dim=env.action_space.shape,
                               size=args.buffer_size)
