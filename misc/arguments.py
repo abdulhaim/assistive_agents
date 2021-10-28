@@ -16,7 +16,6 @@ parser.add_argument("--tasks", type=list, default=['blue'], help="tasks")
 # Episodes and Exploration Parameters
 parser.add_argument('--total-step-num', help='total number of time steps', default=10000000)
 parser.add_argument('--test-num', help='number of episode for recording the return', default=10)
-parser.add_argument('--update-after', help='steps before updating', type=int, default=1000)
 parser.add_argument('--update-every', help='update model after certain number steps', type=int, default=50)
 
 # Environment Parameters

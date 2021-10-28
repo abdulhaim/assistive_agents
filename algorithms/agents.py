@@ -43,7 +43,7 @@ class AssistiveModel(nn.Module):
             action = self.env.action_space.sample() # TODO: epsilon
             return action.item()
         else:
-            embedding = self.network.embedding(obs)
+            embedding = self.network.embedding(obs).squeeze(-1).squeeze(-1)
             if not self.phaseII:
                 one_hot_task = to_onehot(tensor(self.network.task_id).unsqueeze(0), dim=self.num_tasks)
                 one_hot_task = one_hot_task.expand(embedding.shape[0], -1)

@@ -31,7 +31,7 @@ class Network(nn.Module):
 
 
     def forward(self, obs):
-        embedding = self.embedding(tensor(obs))
+        embedding = self.embedding(tensor(obs)).squeeze(-1).squeeze(-1)
         if not self.phaseII:
             one_hot_task = to_onehot(tensor(self.task_id).unsqueeze(0), dim=self.num_tasks)
             one_hot_task = one_hot_task.expand(embedding.shape[0],-1)
@@ -68,12 +68,15 @@ def mlp(sizes, activation, output_activation):
 class ConvEncoder(nn.Module):
     def __init__(self):
         super().__init__()
-        self.embedding =  nn.Sequential(
-            nn.Conv2d(3, 16, (3, 3),stride=4),
+        self.embedding = nn.Sequential(
+            nn.Conv2d(3, 16, (2, 2)),
             nn.ReLU(),
-            nn.Conv2d(16, 32, (1, 1), stride=2),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(16, 32, (2, 2)),
             nn.ReLU(),
-            nn.Flatten())
+            nn.Conv2d(32, 64, (2, 2)),
+            nn.ReLU()
+        )
 
     def forward(self, obs):
         embedding = self.embedding(obs)
@@ -86,7 +89,7 @@ class LayerNormNLP(nn.Module):
         self.num_tasks = num_tasks
 
         # first linear layer.
-        self.linear_layer = nn.Linear(8192 + self.num_tasks, self.output_sizes[0])
+        self.linear_layer = nn.Linear(64 + self.num_tasks, self.output_sizes[0])
 
         # normalisation layer.
         self.norm_layer = nn.Sequential(nn.LayerNorm(self.output_sizes[0]), # over the last dimension, not sure how to create_scale & create_offset

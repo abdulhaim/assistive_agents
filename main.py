@@ -44,7 +44,7 @@ def main(args):
         file = open("buffer.obj", 'rb')
         buffer = pickle.load(file)
     else:
-        observation_shape = np.array(tensor(env.reset()['img']).unsqueeze(0)).shape
+        observation_shape = np.array(tensor(env.reset()['image'])).shape
         buffer = ReplayBufferPhaseI(obs_dim=observation_shape[1:],
                               act_dim=env.action_space.shape,
                               size=args.buffer_size)

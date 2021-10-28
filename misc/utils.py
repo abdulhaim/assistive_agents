@@ -83,9 +83,8 @@ def make_env(seed, task=None):
     return env
 
 def format_obs(obs):
-    obs = np.array(obs['img'])
-    obs_shape = torch.tensor(obs).unsqueeze(0).shape
-    obs = torch.reshape(tensor(obs).unsqueeze(0), (obs_shape[0], obs_shape[3], obs_shape[1], obs_shape[2]))
+    obs = torch.tensor(np.array(obs['image']))
+    obs = obs.transpose(1,3).float() # swapped RGB dimension to come first
     return obs
 
 def get_color(obs):

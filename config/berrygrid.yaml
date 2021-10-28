@@ -1,9 +1,9 @@
 # BerryGrid Environment
 
-lr: 0.001
+lr: 0.002
 
 tasks: ["red", "green", "blue", "purple", "yellow", "grey"]
-num_cumulants: 40
+num_cumulants: 7
 num_demonstrators: 1
 phaseII: False
 total_steps: 10000000
@@ -13,4 +13,5 @@ discount: 0.99
 epsilon: 0.10
 alternate_loss: False
 visualize: False
-target_update_freq: 100
+target_update_freq: 1000
+update_every: 1
