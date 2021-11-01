@@ -39,7 +39,7 @@ class AssistiveModel(nn.Module):
         assert obs.shape[0] == 1
         p = np.random.random()
 
-        if p < self.args.epsilon:
+        if p < self.args.epsilon and self.iteration < self.args.start_steps:
             action = self.env.action_space.sample() # TODO: epsilon
             return action.item()
         else:
@@ -60,22 +60,25 @@ class AssistiveModel(nn.Module):
                 assistive_action = policy.sample()
             return assistive_action
 
-    def itd_loss_fn(self, phi, psi, next_psi, done):
-        target = phi + self.args.gamma * torch.einsum("bca, b  -> bca", next_psi.detach(), done)
-        return self.mse_loss(target, psi)
+    def itd_loss_fn(self, phi, psi, next_psi, action, next_action, done):
+        phi_action = phi[torch.arange(self.args.batch_size), :, action.squeeze().long()]
+        psi_next_action = next_psi[torch.arange(self.args.batch_size), :, next_action.squeeze().long()]
+        psi_action = psi[torch.arange(self.args.batch_size), :, action.squeeze().long()]
+        target = phi_action + self.args.gamma * done * psi_next_action # TODO: double check this
+        return self.mse_loss(target, psi_action)
 
     def q_learning_loss_fn(self, q, a, r, done, q_next):
-        target = r + self.args.gamma * done * torch.max(q_next).detach()
-        return self.mse_loss(target,  torch.gather(q, 1, a.type(torch.int64)))
+        q_next_max = torch.max(q_next, axis=-1).values.detach().unsqueeze(-1)
+        target = r + self.args.gamma * done * q_next_max
+        return self.mse_loss(target,  torch.gather(q, 1, a.long()))
 
     def nll_loss_fn(self, action, q_next):
         # only for human - cross entropy between (one-hot) real action of human and the softmax of q of human.
         return self.cross_entropy_loss(to_onehot(action), self.softmax(torch.gather(q_next)))
 
     def reward_loss(self, real_reward, computed_reward, action):
-        computed =  computed_reward[:, self.network.task_id]
-        computed = torch.gather(computed, 1, action.type(torch.int64))
-        return self.mse_loss(real_reward.unsqueeze(-1), computed)
+        computed = torch.gather(computed_reward, 1, action.type(torch.int64))
+        return self.mse_loss(real_reward, computed)
 
     def update_loss(self, data):
         if self.phaseII:
@@ -84,6 +87,8 @@ class AssistiveModel(nn.Module):
             obs, assistant_action, real_assistant_reward, next_obs, next_assistant_action, done  = \
                     data['obs'],  data['assistant_action'], data['assistant_reward'], data['next_obs'], data['next_assistant_action'], data['done']
 
+        real_assistant_reward = real_assistant_reward.unsqueeze(-1)
+        done = done.unsqueeze(-1)
         self.optimizer.zero_grad()
 
         # Calculate the successor features for time-step `t` and `t+1`
@@ -93,8 +98,11 @@ class AssistiveModel(nn.Module):
 
         _, target_next_assistant_psi, target_next_human_psi, _, _, target_next_assistant_q, _ = self.target_network(next_obs)
 
-        itd_loss_assistant = self.itd_loss_fn(phi, assistant_psi, target_next_assistant_psi, done)
+        itd_loss_assistant = self.itd_loss_fn(phi, assistant_psi, target_next_assistant_psi, assistant_action, next_assistant_action, done)
         self.tb_writer.log_data("assistant_loss/itd_loss", self.iteration, itd_loss_assistant.item())
+
+        # itd_loss_assistant_phi = self.itd_loss_fn(phi, assistant_psi.detach(), target_next_assistant_psi, assistant_action, next_assistant_action, done)
+        # self.tb_writer.log_data("assistant_loss/itd_loss_phi", self.iteration, itd_loss_assistant_phi.item())
 
         if self.phaseII:
             itd_loss_human = torch.mean(self.itd_loss_fn(phi, human_psi, target_next_human_psi, done))
@@ -112,15 +120,13 @@ class AssistiveModel(nn.Module):
                 total_loss += itd_loss_human + bc_loss_human
 
         else:
-            assistant_q_k = assistant_q[:, self.network.task_id]
-            target_next_assistant_q_k = target_next_assistant_q[:, self.network.task_id]
-            dqn_loss_assistant = self.q_learning_loss_fn(assistant_q_k, assistant_action, real_assistant_reward, done, target_next_assistant_q_k)
+            dqn_loss_assistant = self.q_learning_loss_fn(assistant_q, assistant_action, real_assistant_reward, done, target_next_assistant_q)
             self.tb_writer.log_data("assistant_loss/dqn_loss", self.iteration, dqn_loss_assistant.item())
 
             reward_loss_assistant = self.reward_loss(real_assistant_reward, computed_assistant_rewards, assistant_action)
             self.tb_writer.log_data("assistant_loss/reward_loss", self.iteration, reward_loss_assistant.item())
 
-            total_loss = itd_loss_assistant + dqn_loss_assistant + reward_loss_assistant
+            total_loss = dqn_loss_assistant + reward_loss_assistant + itd_loss_assistant
 
         total_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.parameters(), self.args.max_grad_clip)
@@ -128,7 +134,10 @@ class AssistiveModel(nn.Module):
         self.gradient_steps += 1
 
         if self.gradient_steps % self.args.target_update_freq == 0:
-            self.target_network.assistive_psi.load_state_dict(self.network.assistive_psi.state_dict())
+            # self.target_network.assistive_psi.load_state_dict(self.network.assistive_psi.state_dict())
+            # Finally, update target networks by polyak averaging.
+            for target_param, local_param in zip(self.target_network.assistive_psi.parameters(), self.network.assistive_psi.parameters()):
+                target_param.data.copy_(self.args.tau * local_param.data + (1.0 - self.args.tau) * target_param.data)
 
     def save_human_expert(self):
         observation_shape = np.array(self.env.reset()['image']).shape

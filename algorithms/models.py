@@ -41,9 +41,8 @@ class Network(nn.Module):
         phi = torch.reshape(phi, (obs.shape[0], self.num_cumulants, self.num_actions))
         assistive_psi = self.assistive_psi(after_norm)
         assistive_psi = torch.reshape(assistive_psi, (obs.shape[0], self.num_cumulants, self.num_actions))
-        assistive_rewards = torch.einsum("tc, bca  -> bta", self.w, phi)
-        assistive_q =  torch.einsum("tc, bca  -> bta", self.w, assistive_psi) # [b, num_cumulants, num_actions]
-
+        assistive_rewards = torch.matmul(phi.transpose(-1, -2), self.w[self.task_id])
+        assistive_q = torch.matmul(assistive_psi.transpose(-1, -2), self.w[self.task_id])
         if self.phaseII:
             human_psi = self.human_psi(after_norm)
             human_psi = torch.reshape(human_psi, (obs.shape[0], self.num_cumulants, self.num_actions))

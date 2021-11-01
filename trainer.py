@@ -43,8 +43,8 @@ def train_phaseI(args, agent, env, replay_buffer):
             total_episode_count +=1
 
         # Update handling
-        if (step + 1) % args.update_every == 0:
-            for j in range(args.update_every):
+        if step > args.start_steps and (step + 1) % args.update_every == 0:
+            for i in range(args.num_updates):
                 batch = replay_buffer.sample_batch(args.batch_size)
                 agent.update_loss(batch)
 
